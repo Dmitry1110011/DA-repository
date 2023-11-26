@@ -1,0 +1,55 @@
+-- Задание 2.1
+-- Постройте количество визитов в динамике по месяцам старта визита. Ограничьтесь только визитами 2022 года
+select
+	 date_trunc('month', to_Timestamp(start_dttm, 'DD.MM.YYYY HH24:MI')) as month
+	,count (*) as cnt_start_dttm
+from visits
+where date_trunc('year', to_Timestamp(start_dttm, 'DD.MM.YYYY HH24:MI')) = '2022-01-01'
+group by month
+order by month
+
+-- Задание 2.2
+-- Выведите устройства, по которым было больше 100 визитов за июнь 2022 года
+select
+	 device
+	,count (*)
+from visits
+where date_trunc('month', to_Timestamp(start_dttm, 'DD.MM.YYYY HH24:MI')) = '2022-06-01'
+group by device
+having count (*) > 100
+
+-- Задание 2.3
+-- Выведите визиты всех пользователей, у которых никогда не было покупок
+select *
+from visits
+where uid NOT IN (select uid from purchases)
+
+-- Задание 2.4
+-- Для каждого клиента найдите средний чек за его последние три покупки
+WITH
+t1 as(
+select *
+	,ROW_NUMBER () over (PARTITION by uid order by to_Timestamp (buy_ts, 'DD.MM.YYYY HH24:MI') DESC) as rn
+from purchases
+)
+select
+       uid
+      ,avg (revenue) as avg_payment
+FROM t1
+where rn <= 3
+GROUP by uid
+
+-- Задание 2.5
+-- Для каждого источника визита рассчитайте среднее время, которое проходит между визитами. В расчет берите только визиты, продлившиеся дольше 10 секунд
+WITH
+t1 as(
+select *
+	,to_Timestamp (start_dttm, 'DD.MM.YYYY HH24:MI:SS') - LAG (to_Timestamp (start_dttm, 'DD.MM.YYYY HH24:MI:SS')) over (partition by source_id order by to_Timestamp (start_dttm, 'DD.MM.YYYY HH24:MI:SS')) as time_between_visits
+from visits
+where to_Timestamp (end_dttm, 'DD.MM.YYYY HH24:MI:SS') - to_Timestamp (start_dttm, 'DD.MM.YYYY HH24:MI:SS') > INTERVAL '10 SECOND'
+)
+select
+	source_id
+	,AVG (time_between_visits) as avg_time_between_visits
+from t1
+GROUP by source_id
