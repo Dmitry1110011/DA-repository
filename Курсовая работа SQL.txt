@@ -1,0 +1,124 @@
+with t1_first_payments as (
+        select
+            user_id
+            , min (transaction_datetime::date) as first_payment_date
+        from skyeng_db.payments
+where status_name = 'success'
+group by user_id
+        ),
+
+t2_all_dates as (
+        select 
+            distinct (class_start_datetime::date) as dt
+        from skyeng_db.classes
+        where class_start_datetime between '2016-01-01' and '2016-12-31'
+        ),
+
+t3_all_dates_by_user as (
+select 
+     user_id
+     ,dt
+from t1_first_payments
+    join t2_all_dates
+    on first_payment_date <= dt
+),
+
+
+t4_payments_by_dates as (
+select
+    user_id
+    ,transaction_datetime::date as payment_date
+    ,sum (classes) as transaction_balance_change
+from skyeng_db.payments
+where status_name = 'success'
+group by user_id, payment_date
+),
+
+t5_payments_by_dates_cumsum as (
+select
+    a.user_id
+    ,dt
+    ,coalesce (transaction_balance_change, 0) as transaction_balance_change
+    ,sum (coalesce (transaction_balance_change, 0)) over (partition by a.user_id order by dt) as transaction_balance_change_cs
+from t3_all_dates_by_user as a
+    left join t4_payments_by_dates as b
+    on a.user_id = b.user_id
+    and dt = payment_date
+),
+
+t6_classes_by_dates as (
+select
+    user_id
+    ,class_start_datetime::date as class_date
+    ,count (id_class) * (-1) as classes
+from skyeng_db.classes
+where class_type <> 'trial'
+    and class_status in ('success', 'failed_by_student')
+group by user_id, class_date
+),
+
+t7_classes_by_dates_dates_cumsum as (
+select
+    c.user_id
+    ,dt
+    ,coalesce (classes, 0) as classes
+    ,sum (coalesce (classes, 0)) over (partition by c.user_id order by dt) as classes_cs
+from t3_all_dates_by_user as c
+    left join t6_classes_by_dates as d
+    on c.user_id = d.user_id
+    and dt = class_date
+),
+
+t8_balances as (
+select
+    t5_payments_by_dates_cumsum.user_id
+    ,t5_payments_by_dates_cumsum.dt
+    ,transaction_balance_change
+    ,transaction_balance_change_cs
+    ,classes
+    ,classes_cs
+    ,classes_cs + transaction_balance_change_cs as balance
+from t5_payments_by_dates_cumsum
+    join t7_classes_by_dates_dates_cumsum
+    using (user_id, dt)
+)
+
+-- Задание 1
+-- Выберите топ-1000 строк из CTE `balances` с сортировкой по `user_id` и `dt`. Посмотрите на изменения балансов студентов. 
+-- Какие вопросы стоит задавать дата-инженерам и владельцам таблицы `payments`?
+
+-- Вопрос дата-инженерам: по какой причине в поле balance отрицательные значения?
+
+-- select *
+-- from t8_balances
+-- where balance is not null
+-- order by balance, user_id, dt
+
+
+select
+    dt
+    ,sum (transaction_balance_change) as sum_transaction_balance_change
+    ,sum (transaction_balance_change_cs) as sum_transaction_balance_change_cs
+    ,sum (classes) as sum_classes
+    ,sum (classes_cs) as sum_classes_cs
+    ,sum (balance) as sum_balance
+from t8_balances
+group by dt
+order by dt
+
+-- Задание 2
+-- Создайте визуализацию (линейную диаграмму) итогового результата.
+-- Какие выводы можно сделать из получившейся визуализации?
+
+-- Выводы:
+-- К концу года было куплено 21 650 уроков.
+-- По графикам видно, что продажи уроков улучшались в течение года.
+-- Летом наблюдался незначительный спад продаж уроков.
+-- В конце августа рост числа продаж уроков возобновился и достиг пика в конце октября – начале ноября.
+-- После чего наметился спад продаж, который сменился ростом за 2 недели до НГ.
+-- К концу года было проведено 17 257 уроков.
+-- На графиках почти не видно влияние летнего сезона, однако в конце лета началось увеличение количества проводимых уроков.
+-- За месяц до НГ, количество проводимых уроков стало незначительно сокращаться.
+-- В предновогоднюю неделю количество проведенных уроков упало значительно - до уровня начала осени.
+-- В течение всего года наблюдалась зависимость количества проводимых уроков от дня недели.
+-- Количество оплаченных, но не пройдённых уроков нарастало в течение всего года.
