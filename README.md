@@ -26,11 +26,11 @@
 - составление калькулятора юнит-экономики онлайн-кинотеатра,
 - создание итоговой презентации в PowerPoint
 
-> <a href="https://github.com/Skyproportfolio/data-analytics/blob/242649f63be48c763f3165413f84fa6b06c4c0a4/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%20%E2%84%961.xlsx">Ссылка на проект</a>
 
-> <a href="[https://github.com/Skyproportfolio/data-analytics/blob/242649f63be48c763f3165413f84fa6b06c4c0a4/%D0%9F%D1%80%D0%BE%D0%B5%D0%BA%D1%82%20%E2%84%961.xlsx](https://github.com/Dmitry1110011/DA-repository/blob/main/%D0%9A%D1%83%D1%80%D1%81%D0%BE%D0%B2%D0%BE%D0%B9%20%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%20Excel.xlsx)">Ссылка на файл Excel </a>
+> <a href="https://github.com/Dmitry1110011/DA-repository/blob/main/%D0%9A%D1%83%D1%80%D1%81%D0%BE%D0%B2%D0%BE%D0%B9%20%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%20Excel.xlsx">Ссылка на Excel </a>
 
 > <a href="https://github.com/Dmitry1110011/DA-repository/blob/main/%D0%9F%D1%80%D0%B5%D0%B7%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F.pptx">Ссылка на PowerPoint </a>
+
 
 
 
