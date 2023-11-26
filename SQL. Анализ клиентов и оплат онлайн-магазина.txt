@@ -1,0 +1,98 @@
+-- Задание 2.1
+-- Для федерального округа Поволжье выведите динамику суммарных платежей по дням.
+SELECT date_trunc('day', to_Timestamp(time_payment, 'YYYY.MM.DD HH24MISS')) as day_payment
+	,SUM (amt_payment) as sum_payment
+From payments
+join client_info
+	on payments.id_client = client_info.id_client
+join city_info
+	on client_info.id_city = city_info.id_city
+WHERE name_region = 'Поволжье'
+group by day_payment
+
+-- Задание 2.2
+-- Для каждого города найдите долю мужчин (% мужчин среди всех клиентов в данном городе).
+-- Ограничьтесь только клиентами, которым от 20 до 40 лет. В выводе используйте названия городов, а не идентификаторы.
+with t1 as(
+SELECT 
+	,CASE WHEN gender = 'м' then 1
+    else 0
+    end
+    as flag_gender
+From client_info
+join city_info
+	on client_info.id_city = city_info.id_city
+WHERE age BETWEEN 20 and 40
+)
+SELECT name_city
+	,sum (flag_gender)100COUNT (flag_gender)float as m_share
+from t1
+group by name_city
+order by name_city
+
+-- Задание 2.3
+-- Определите средний возраст по тем клиентам, которые ни разу ничего не заплатили.
+SELECT AVG (age) as avg_age
+FROM client_info
+left JOIN payments
+	on payments.id_client = client_info.id_client
+WHERE amt_payment is NULL
+
+-- Задание 2.4
+-- Для каждого федерального округа выделите первые три платежа.
+WITH t1 as(
+SELECT
+  	payments.id_client
+	,time_payment
+	,amt_payment
+	,name_city
+	,name_region
+	,ROW_NUMBER () over (PARTITION by name_region order by to_Timestamp (time_payment, 'YYYY.MM.DD HH24MI') ) as rn
+From payments
+join client_info
+	on payments.id_client = client_info.id_client
+join city_info
+	on client_info.id_city = city_info.id_city
+  )
+SELECT 
+From t1
+WHERE rn BETWEEN 1 and 3
+
+-- Задание 2.5
+-- Ограничьтесь клиентами из федеральных округов Южный и Северный.
+-- Для каждого города рассчитайте, сколько в среднем времени проходит между платежами одного клиента.
+-- Задание 2.5
+-- Ограничьтесь клиентами из федеральных округов Южный и Северный.
+-- Для каждого города рассчитайте, сколько в среднем времени проходит между платежами одного клиента.
+
+WITH t1 as (
+SELECT 
+	payments.id_client
+    ,to_Timestamp (time_payment, 'YYYY.MM.DD HH24MISS') as dt
+    ,name_city
+From payments
+join client_info
+	on payments.id_client = client_info.id_client
+join city_info
+	on client_info.id_city = city_info.id_city
+WHERE name_region = 'Южный' OR name_region = 'Северный'
+order by payments.id_client
+),
+t2 as ( --список клиентов с количеством платежей  1
+SELECT id_client
+	,COUNT (dt)
+From t1
+group by id_client
+having COUNT (dt)  1
+),
+t3 as ( --таблица с разницей во времени
+SELECT 
+	,dt - LAG (dt) over (PARTITION by id_client order by dt) as delta_time
+from t1
+WHERE t1.id_client IN (SELECT id_client FROM t2)
+)
+SELECT name_city
+	,avg (delta_time) as avg_delta_time
+from t3
+GROUP by name_city
+order by name_city
